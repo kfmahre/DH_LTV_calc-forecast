@@ -335,7 +335,6 @@ df_installs = df_installs.sort_values(by='INSTALL_DATE',ascending=True).reset_in
 df_installs = df_installs.drop_duplicates(subset=['CONTEXT_DEVICE_ID'], keep='first').reset_index(drop=True)
 df_installs_comp = pd.merge(df_installs,data_USER_DEVICE_MAP, on=['CONTEXT_DEVICE_ID'])
 
-
 #%% merges the install data with the session data
 
 df_user_sessions = pd.merge(df_users_comp,df_installs_comp, on=['USER_ID','CONTEXT_DEVICE_ID','PLATFORM','COUNTRY'])
@@ -364,12 +363,13 @@ df_user_marketing = pd.DataFrame(data_USER_MARKETING, columns=['CUSTOM_USER_IDS'
 #df_user_marketing.rename(columns = {'CUSTOM_USER_IDS':'USER_ID', 'EVENT_TIMESTAMP':'AD_TIMESTAMP'}, inplace = True) 
 df_user_marketing.rename(columns = {'CUSTOM_USER_IDS':'USER_ID'}, inplace = True) 
 df_user_marketing['USER_ID'] = df_user_marketing['USER_ID'].str.strip('"')
-
+df_user_marketing['CAMPAIGN_NAME'] = df_user_marketing['CAMPAIGN_NAME'].str.upper()
+df_user_marketing['SUB_CAMPAIGN_NAME'] = df_user_marketing['SUB_CAMPAIGN_NAME'].str.lower()
 
 #%% explores campaign data
 
 ad_camps = df_user_marketing['CAMPAIGN_NAME'].dropna().unique().tolist()
-ad_camps.remove('CampaignName')
+ad_camps.remove('CampaignName'.upper())
 camp_sums = []
 
 def count_str_in_col(c,s):
@@ -394,7 +394,7 @@ plt.show()
 #%% counts by SUB_CAMPAIGN_NAME
 
 sub_camps = df_user_marketing['SUB_CAMPAIGN_NAME'].dropna().unique().tolist()
-sub_camps.remove('AdGroupName')
+sub_camps.remove('AdGroupName'.lower())
 sub_camp_sums = []
 
 for i in range(len(sub_camps)):
@@ -805,7 +805,7 @@ sub_camp_dau_preds = {}
 sub_camp_rev_preds = {}
 
 for i in range(len(subcamp_names)):
-    if len(sub_camps_by_date[subcamp_names[i]]['DAU']) > 8:
+    if len(sub_camps_by_date[subcamp_names[i]]['DAU']) >= 10:
         dau_data = sub_camps_by_date[subcamp_names[i]]['DAU']
         DAU_COHORT_ARIMA = pm.auto_arima(np.log(dau_data+1), start_p=1, start_q=1,
                                      max_p=3, max_q=3, m=12,
@@ -831,9 +831,9 @@ for i in range(len(subcamp_names)):
         sub_camp_dau_preds[subcamp_names[i]] = np.zeros(181-len(sub_camps_by_date[subcamp_names[i]]['DAU']))
         
 for i in range(len(subcamp_names)):
-    if len(sub_camps_by_date[subcamp_names[i]]['REVENUE']) > 8:
-        dau_data = sub_camps_by_date[subcamp_names[i]]['REVENUE']
-        DAU_COHORT_ARIMA = pm.auto_arima(np.log(dau_data+1), start_p=1, start_q=1,
+    if len(sub_camps_by_date[subcamp_names[i]]['REVENUE']) >= 10:
+        rev_data = sub_camps_by_date[subcamp_names[i]]['REVENUE']
+        DAU_COHORT_ARIMA = pm.auto_arima(np.log(rev_data+1), start_p=1, start_q=1,
                                      max_p=3, max_q=3, m=12,
                                      start_P=0, seasonal=True,
                                      d=1, D=1, trace=True,
@@ -841,9 +841,9 @@ for i in range(len(subcamp_names)):
                                      suppress_warnings=True,  # don't want convergence warnings
                                      stepwise=True)  # set to stepwise
         # Forecast
-        n_periods = 181-len(dau_data)
+        n_periods = 181-len(rev_data)
         fc, confint = DAU_COHORT_ARIMA.predict(n_periods=n_periods, return_conf_int=True)
-        index_of_fc = np.arange(len(dau_data), len(dau_data)+n_periods)
+        index_of_fc = np.arange(len(rev_data), len(rev_data)+n_periods)
         
         # make series for plotting purpose
         fc_series = pd.Series(fc, index=index_of_fc)
@@ -898,7 +898,201 @@ for i in range(len(subcamp_names)):
     sub_camp_preds[subcamp_names[i]]['LTV'] = sub_camp_preds[subcamp_names[i]]['RetentionRate']*sub_camp_preds[subcamp_names[i]]['ARPDAU']
     sub_camp_preds[subcamp_names[i]]['LTV'] = sub_camp_preds[subcamp_names[i]]['LTV'].fillna(0)
     sub_camp_preds[subcamp_names[i]].loc[:,sub_camp_preds[subcamp_names[i]].columns!='SESSION_DATE'] = sub_camp_preds[subcamp_names[i]].loc[:,sub_camp_preds[subcamp_names[i]].columns!='SESSION_DATE'].fillna(0)
+
+#%%
+
+start_date = df_users.SESSION_DATE.min()
+end_date = datetime.today() + timedelta(days=180)
+end_date = end_date.date()
+
+sub_camps_dates_index = pd.date_range(start = start_date, end = end_date, freq='D').tolist()
+
+for d in range(len(sub_camps_dates_index)):
+        sub_camps_dates_index[d] = datetime.date(sub_camps_dates_index[d])
+sub_camps_dates_index = pd.Series(sub_camps_dates_index)
+
+df_sub_camp_daus = pd.DataFrame(sub_camps_dates_index, columns=['DATE'])
+sub_camp_daus = {}
+for i in range(len(subcamp_names)):
+    sub_camp_preds[subcamp_names[i]] = sub_camp_preds[subcamp_names[i]].set_index('SESSION_DATE')
+    sub_camp_preds[subcamp_names[i]].index.name = 'DATE'
+    sub_camp_daus[subcamp_names[i]] = pd.DataFrame(sub_camp_preds[subcamp_names[i]].DAU)
+    sub_camp_daus[subcamp_names[i]] = sub_camp_daus[subcamp_names[i]].reset_index() 
+for i in range(len(subcamp_names)):
+    col_name = subcamp_names[i].replace('_',' ').split(':')
+    sub_camp_daus[subcamp_names[i]].rename(columns = {'DAU':col_name[1]}, inplace = True)
+for i in range(len(subcamp_names)):
+    df_sub_camp_daus = pd.merge(df_sub_camp_daus,sub_camp_daus[subcamp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
     
+df_sub_camp_revs = pd.DataFrame(sub_camps_dates_index, columns=['DATE'])
+sub_camp_revs = {}
+for i in range(len(subcamp_names)):
+    sub_camp_revs[subcamp_names[i]] = pd.DataFrame(sub_camp_preds[subcamp_names[i]].REVENUE)
+    sub_camp_revs[subcamp_names[i]] = sub_camp_revs[subcamp_names[i]].reset_index() 
+for i in range(len(subcamp_names)):
+    col_name = subcamp_names[i].replace('_',' ').split(':')
+    sub_camp_revs[subcamp_names[i]].rename(columns = {'REVENUE':col_name[1]}, inplace = True)
+for i in range(len(subcamp_names)):
+    df_sub_camp_revs = pd.merge(df_sub_camp_revs,sub_camp_revs[subcamp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
+    
+df_sub_camp_LTVs = pd.DataFrame(sub_camps_dates_index, columns=['DATE'])
+sub_camp_ltvs = {}
+for i in range(len(subcamp_names)):
+    sub_camp_ltvs[subcamp_names[i]] = pd.DataFrame(sub_camp_preds[subcamp_names[i]].LTV)
+    sub_camp_ltvs[subcamp_names[i]] = sub_camp_ltvs[subcamp_names[i]].reset_index() 
+for i in range(len(subcamp_names)):
+    col_name = subcamp_names[i].replace('_',' ').split(':')
+    sub_camp_ltvs[subcamp_names[i]].rename(columns = {'LTV':col_name[1]}, inplace = True)
+for i in range(len(subcamp_names)):
+    df_sub_camp_LTVs = pd.merge(df_sub_camp_LTVs,sub_camp_ltvs[subcamp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
+
+#%%
+
+mark_camp_dau_preds = {}
+mark_camp_rev_preds = {}
+
+for i in range(len(camp_names)):
+    if len(mark_camps_by_date[camp_names[i]]['DAU']) >= 10:
+        dau_data = mark_camps_by_date[camp_names[i]]['DAU']
+        print('<<<<<<<<<<<<<<'+str(i)+'>>>>>>>>>>>>>>>>>>')
+        DAU_COHORT_ARIMA = pm.auto_arima(np.log(dau_data+1), start_p=1, start_q=1,
+                                     max_p=5, max_q=5,
+                                     start_P=0,
+                                     d=1, D=1, trace=True,
+                                     error_action='warn',  # don't want to know if an order does not work
+                                     suppress_warnings=True,  # don't want convergence warnings
+                                     stepwise=True)  # set to stepwise
+        # Forecast
+        n_periods = 181-len(dau_data)
+        fc, confint = DAU_COHORT_ARIMA.predict(n_periods=n_periods, return_conf_int=True)
+        index_of_fc = np.arange(len(dau_data), len(dau_data)+n_periods)
+        
+        # make series for plotting purpose
+        fc_series = pd.Series(fc, index=index_of_fc)
+        lower_series = pd.Series(confint[:, 0], index=index_of_fc)
+        upper_series = pd.Series(confint[:, 1], index=index_of_fc)
+            
+        fc_series = np.exp(fc_series)-1
+            
+        mark_camp_dau_preds[camp_names[i]] = fc_series
+    else:
+        mark_camp_dau_preds[camp_names[i]] = np.zeros(181-len(mark_camps_by_date[camp_names[i]]['DAU']))
+        
+for i in range(len(camp_names)):
+    if len(mark_camps_by_date[camp_names[i]]['REVENUE']) >= 10:
+        rev_data = mark_camps_by_date[camp_names[i]]['REVENUE']
+        DAU_COHORT_ARIMA = pm.auto_arima(np.log(rev_data+1), start_p=1, start_q=1,
+                                     max_p=5, max_q=5,
+                                     start_P=0,
+                                     d=1, D=1, trace=True,
+                                     error_action='warn',  # don't want to know if an order does not work
+                                     suppress_warnings=True,  # don't want convergence warnings
+                                     stepwise=True)  # set to stepwise
+        # Forecast
+        n_periods = 181-len(rev_data)
+        fc, confint = DAU_COHORT_ARIMA.predict(n_periods=n_periods, return_conf_int=True)
+        index_of_fc = np.arange(len(rev_data), len(rev_data)+n_periods)
+        
+        # make series for plotting purpose
+        fc_series = pd.Series(fc, index=index_of_fc)
+        lower_series = pd.Series(confint[:, 0], index=index_of_fc)
+        upper_series = pd.Series(confint[:, 1], index=index_of_fc)
+            
+        fc_series = np.exp(fc_series)-1
+            
+        mark_camp_rev_preds[camp_names[i]] = fc_series
+    else:
+        mark_camp_rev_preds[camp_names[i]] = np.zeros(181-len(mark_camps_by_date[camp_names[i]]['REVENUE']))
+        
+mark_camp_preds = {}
+
+for i in range(len(camp_names)):
+    known_dau = pd.Series(mark_camps_by_date[camp_names[i]].DAU)
+    pred_dau = pd.Series(mark_camp_dau_preds[camp_names[i]])
+    dau_fc = known_dau.append(pred_dau)
+    mark_camp_preds[camp_names[i]] = pd.DataFrame(dau_fc, columns=['DAU'])
+    known_rev = pd.Series(mark_camps_by_date[camp_names[i]].REVENUE)
+    pred_rev = pd.Series(mark_camp_dau_preds[camp_names[i]])
+    rev_fc = known_rev.append(pred_rev)
+    mark_camp_preds[camp_names[i]]['REVENUE'] = rev_fc
+
+for i in range(len(camp_names)):
+    start_date = mark_camps_by_date[camp_names[i]]['SESSION_DATE'][0]
+    print(start_date)
+    if start_date != None:
+        start_date = mark_camps_by_date[camp_names[i]]['SESSION_DATE'][0]
+    else:
+        start_date = datetime.today()
+        start_date = start_date.date()
+        print(start_date)
+    dates_index = pd.date_range(start = start_date, periods=181, freq='D').tolist()
+    for d in range(len(dates_index)):
+        dates_index[d] = datetime.date(dates_index[d])
+    dates_index = pd.Series(dates_index)
+    mark_camp_preds[camp_names[i]] = mark_camp_preds[camp_names[i]].set_index(dates_index)
+    mark_camp_preds[camp_names[i]].index.name = 'SESSION_DATE'
+    mark_camp_preds[camp_names[i]] = mark_camp_preds[camp_names[i]].reset_index()
+
+for i in range(len(camp_names)):
+    mark_camp_preds[camp_names[i]]['Campaign_Size'] = mark_camps_by_date[camp_names[i]]['Campaign_Size']
+    mark_camp_preds[camp_names[i]]['Campaign_Size'] = mark_camp_preds[camp_names[i]]['Campaign_Size'].fillna(mark_camp_preds[camp_names[i]]['Campaign_Size'][0])
+    
+for i in range(len(camp_names)):
+    mark_camp_preds[camp_names[i]]['RetentionRate'] = mark_camp_preds[camp_names[i]]['DAU']/mark_camp_preds[camp_names[i]]['Campaign_Size']
+    mark_camp_preds[camp_names[i]]['RetentionRate'][mark_camp_preds[camp_names[i]]['RetentionRate'] < 0] = 0
+    mark_camp_preds[camp_names[i]]['DAU'][mark_camp_preds[camp_names[i]]['DAU'] < .1] = 0
+    mark_camp_preds[camp_names[i]]['REVENUE'][mark_camp_preds[camp_names[i]]['REVENUE'] < .1] = 0
+    mark_camp_preds[camp_names[i]]['ARPDAU'] = mark_camp_preds[camp_names[i]]['REVENUE']/mark_camp_preds[camp_names[i]]['DAU']
+    mark_camp_preds[camp_names[i]]['LTV'] = mark_camp_preds[camp_names[i]]['RetentionRate']*mark_camp_preds[camp_names[i]]['ARPDAU']
+    mark_camp_preds[camp_names[i]]['LTV'] = mark_camp_preds[camp_names[i]]['LTV'].fillna(0)
+    mark_camp_preds[camp_names[i]].loc[:,mark_camp_preds[camp_names[i]].columns!='SESSION_DATE'] = mark_camp_preds[camp_names[i]].loc[:,mark_camp_preds[camp_names[i]].columns!='SESSION_DATE'].fillna(0)
+
+#%%
+
+start_date = df_users.SESSION_DATE.min()
+end_date = datetime.today() + timedelta(days=180)
+end_date = end_date.date()
+
+mark_camps_dates_index = pd.date_range(start = start_date, end = end_date, freq='D').tolist()
+
+for d in range(len(mark_camps_dates_index)):
+        mark_camps_dates_index[d] = datetime.date(mark_camps_dates_index[d])
+mark_camps_dates_index = pd.Series(mark_camps_dates_index)
+
+df_mark_camp_daus = pd.DataFrame(mark_camps_dates_index, columns=['DATE'])
+mark_camp_daus = {}
+for i in range(len(camp_names)):
+    mark_camp_preds[camp_names[i]] = mark_camp_preds[camp_names[i]].set_index('SESSION_DATE')
+    mark_camp_preds[camp_names[i]].index.name = 'DATE'
+    mark_camp_daus[camp_names[i]] = pd.DataFrame(mark_camp_preds[camp_names[i]].DAU)
+    mark_camp_daus[camp_names[i]] = mark_camp_daus[camp_names[i]].reset_index() 
+for i in range(len(camp_names)):
+    col_name = camp_names[i].strip('campaign:')
+    mark_camp_daus[camp_names[i]].rename(columns = {'DAU':col_name}, inplace = True)
+for i in range(len(camp_names)):
+    df_mark_camp_daus = pd.merge(df_mark_camp_daus,mark_camp_daus[camp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
+    
+df_mark_camp_revs = pd.DataFrame(mark_camps_dates_index, columns=['DATE'])
+mark_camp_revs = {}
+for i in range(len(camp_names)):
+    mark_camp_revs[camp_names[i]] = pd.DataFrame(mark_camp_preds[camp_names[i]].REVENUE)
+    mark_camp_revs[camp_names[i]] = mark_camp_revs[camp_names[i]].reset_index() 
+for i in range(len(camp_names)):
+    col_name = camp_names[i].strip('campaign:')
+    mark_camp_revs[camp_names[i]].rename(columns = {'REVENUE':col_name}, inplace = True)
+for i in range(len(camp_names)):
+    df_mark_camp_revs = pd.merge(df_mark_camp_revs,mark_camp_revs[camp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
+    
+df_mark_camp_LTVs = pd.DataFrame(mark_camps_dates_index, columns=['DATE'])
+mark_camp_ltvs = {}
+for i in range(len(camp_names)):
+    mark_camp_ltvs[camp_names[i]] = pd.DataFrame(mark_camp_preds[camp_names[i]].LTV)
+    mark_camp_ltvs[camp_names[i]] = mark_camp_ltvs[camp_names[i]].reset_index() 
+for i in range(len(camp_names)):
+    col_name = camp_names[i].strip('campaign:')
+    mark_camp_ltvs[camp_names[i]].rename(columns = {'LTV':col_name}, inplace = True)
+for i in range(len(camp_names)):
+    df_mark_camp_LTVs = pd.merge(df_mark_camp_LTVs,mark_camp_ltvs[camp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
 
 #%%
 
@@ -914,17 +1108,37 @@ engine = create_engine(URL(
 
 connection = engine.connect()
 
-for i in range(len(subcamp_names)):
-    connection.execute(DropTable(Table(subcamp_names[i], MetaData())))
+connection.execute(DropTable(Table('Sub_campaign_DAU', MetaData())))
+connection.execute(DropTable(Table('Sub_campaign_REVENUE', MetaData())))
+connection.execute(DropTable(Table('Sub_campaign_LTV', MetaData())))
+connection.execute(DropTable(Table('Campaign_DAU', MetaData())))
+connection.execute(DropTable(Table('Campaign_REVENUE', MetaData())))
+connection.execute(DropTable(Table('Campaign_LTV', MetaData())))
 
-for i in range(len(camp_names)):
-    connection.execute(DropTable(Table(camp_names[i], MetaData())))
+connection.close()
+engine.dispose()
 
-for i in range(len(subcamp_names)):
-    sub_camps_by_date[subcamp_names[i]].to_sql(subcamp_names[i], con=engine, index=False)
-    
-for i in range(len(camp_names)):
-    mark_camps_by_date[camp_names[i]].to_sql(camp_names[i], con=engine, index=False)
+ 
+#%%
+
+engine = create_engine(URL(
+    user='KYLE.MAHRE@WARNERMEDIA.COM',
+    password='Strolling_Jim1',
+    account = 'ted_as.us-east-1',
+    authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
+    database="PROD_GAMES",
+    schema="DIMENSION_HOP",
+    role='PROD_ADMIN'
+))
+
+connection = engine.connect()
+
+df_sub_camp_daus.to_sql('Sub_campaign_DAU', con=engine, index=False)
+df_sub_camp_revs.to_sql('Sub_campaign_REVENUE', con=engine, index=False)
+df_sub_camp_LTVs.to_sql('Sub_campaign_LTV', con=engine, index=False)
+df_mark_camp_daus.to_sql('Campaign_DAU', con=engine, index=False)
+df_mark_camp_revs.to_sql('Campaign_REVENUE', con=engine, index=False)
+df_mark_camp_LTVs.to_sql('Campaign_LTV', con=engine, index=False)
 
 connection.close()
 engine.dispose()
