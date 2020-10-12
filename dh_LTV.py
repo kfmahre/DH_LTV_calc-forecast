@@ -6,7 +6,7 @@ Created on Tue Sep  1 11:41:29 2020
 """
 
 from __future__ import division
-from datetime import datetime, timedelta#, date
+from datetime import datetime, timedelta, date
 import snowflake.connector
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
@@ -423,6 +423,10 @@ df_campaign = df_users.copy()
 
 campaign_start_date = df_campaign.SESSION_DATE.min()
 campaign_latest_date = df_campaign.SESSION_DATE.max()
+
+if campaign_latest_date > date.today():
+    campaign_latest_date = date.today()
+
 numdays = campaign_latest_date - campaign_start_date
 
 numdays = numdays / pd.Timedelta(1, unit='D')
@@ -449,6 +453,8 @@ df_campaign_cohort = df_users[df_users['COUNTRY'].isin(country_list)] # df_users
 #df_campaign_cohort = pd.merge(df_campaign_users,df_campaign, on=['USER_ID','SESSION_DATE']).reset_index(drop=True) # merges the user and marketing data into a single dataframe
 df_campaign_cohort = df_campaign_cohort.sort_values(by='SESSION_DATE',ascending=True).reset_index(drop=True) # sorts by session_date
 df_campaign_cohort['PLAYER_DAY'] = df_campaign_cohort['SESSION_DATE'] - df_campaign_cohort['INSTALL_DATE'] # calculates player day
+df_campaign_cohort = df_campaign_cohort[df_campaign_cohort['PLAYER_DAY'] >= pd.Timedelta('0 days')] # exclude data where the number of player days is negative
+df_campaign_cohort = df_campaign_cohort[df_campaign_cohort['PLAYER_DAY'] <= pd.Timedelta(str(numdays)+' days')] # excude data that calculates more days than possible to have been played
 #df_campaign_cohort = df_campaign_cohort.drop_duplicates() 
 
 #%% calculations for REVENUE, DAU, RetentionRate, and ARPDAU, based on chosen data
@@ -498,7 +504,7 @@ DAU_COHORT_ARIMA = pm.auto_arima(np.log(COHORT_by_player_day['DAU']+1), start_p=
                              m=7,
                              seasonal=True,
                              start_P=0,
-                             #D=1,
+                             D=1,
                              trace=True,
                              error_action='ignore',  
                              suppress_warnings=True, 
@@ -541,10 +547,10 @@ print(DAU_COHORT_pred)
 REV_COHORT_ARIMA = pm.auto_arima(np.log(COHORT_by_player_day['REVENUE']+1), start_p=1, start_q=1,
                              #test='adf',
                              max_p=12, max_q=12,
-                             #m=7,
-                             #seasonal=True,
+                             m=7,
+                             seasonal=True,
                              start_P=0,
-                             #D=1,
+                             D=1,
                              trace=True,
                              error_action='ignore',  
                              suppress_warnings=True, 
@@ -807,11 +813,11 @@ sub_camp_rev_preds = {}
 for i in range(len(subcamp_names)):
     if len(sub_camps_by_date[subcamp_names[i]]['DAU']) >= 10:
         dau_data = sub_camps_by_date[subcamp_names[i]]['DAU']
-        DAU_COHORT_ARIMA = pm.auto_arima(np.log(dau_data+1), start_p=1, start_q=1,
-                                     max_p=3, max_q=3, m=12,
-                                     start_P=0, seasonal=True,
+        DAU_COHORT_ARIMA = pm.auto_arima(np.log(dau_data+1),start_p=1, start_q=1,
+                                     max_p=5, max_q=5,
+                                     start_P=0,
                                      d=1, D=1, trace=True,
-                                     error_action='ignore',  # don't want to know if an order does not work
+                                     error_action='warn',  # don't want to know if an order does not work
                                      suppress_warnings=True,  # don't want convergence warnings
                                      stepwise=True)  # set to stepwise
         # Forecast
@@ -833,11 +839,11 @@ for i in range(len(subcamp_names)):
 for i in range(len(subcamp_names)):
     if len(sub_camps_by_date[subcamp_names[i]]['REVENUE']) >= 10:
         rev_data = sub_camps_by_date[subcamp_names[i]]['REVENUE']
-        DAU_COHORT_ARIMA = pm.auto_arima(np.log(rev_data+1), start_p=1, start_q=1,
-                                     max_p=3, max_q=3, m=12,
-                                     start_P=0, seasonal=True,
+        DAU_COHORT_ARIMA = pm.auto_arima(np.log(rev_data+1),start_p=1, start_q=1,
+                                     max_p=5, max_q=5,
+                                     start_P=0,
                                      d=1, D=1, trace=True,
-                                     error_action='ignore',  # don't want to know if an order does not work
+                                     error_action='warn',  # don't want to know if an order does not work
                                      suppress_warnings=True,  # don't want convergence warnings
                                      stepwise=True)  # set to stepwise
         # Forecast
