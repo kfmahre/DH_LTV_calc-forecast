@@ -651,30 +651,9 @@ engine = create_engine(URL(
 
 connection = engine.connect()
 
-connection.execute(DropTable(Table('LTV_AU_ByPlayerDay', MetaData())))
-connection.execute(DropTable(Table('LTV_AU_ByPlayerWeek', MetaData())))
-connection.close()
-engine.dispose()
-
-
-#%% inserts selected dataframe into snowflake
-
-registry.register('snowflake', 'snowflake.sqlalchemy', 'dialect')
-
-engine = create_engine(URL(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
-    account = 'ted_as.us-east-1',
-    authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
-    database="PROD_GAMES",
-    schema="DIMENSION_HOP",
-    role='PROD_ADMIN'
-))
-
-connection = engine.connect()
-
-COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU_ByPlayerDay', con=engine, index=False)
-AU_NZ_ByPlayerWeek.to_sql('LTV_AU_ByPlayerWeek', con=engine, index=False)
+connection.execute(DropTable(Table('LTV_AU_BYDATE', MetaData())))
+connection.execute(DropTable(Table('LTV_AU_BYPLAYERDAY', MetaData())))
+connection.execute(DropTable(Table('LTV_AU_BYPLAYERWEEK', MetaData())))
 connection.close()
 engine.dispose()
 
@@ -694,8 +673,9 @@ engine = create_engine(URL(
 
 connection = engine.connect()
 
-COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU_ByPlayerDay', con=engine, index=False)
-AU_NZ_ByPlayerWeek.to_sql('LTV_AU_ByPlayerWeek', con=engine, index=False)
+COHORT_by_date.to_sql('LTV_AU_BYDATE', con=engine, index=False)
+COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU_BYPLAYERDAY', con=engine, index=False)
+AU_NZ_ByPlayerWeek.to_sql('LTV_AU_BYPLAYERWEEK', con=engine, index=False)
 connection.close()
 engine.dispose()
 
@@ -1156,12 +1136,12 @@ engine = create_engine(URL(
 
 connection = engine.connect()
 
-connection.execute(DropTable(Table('Sub_campaign_DAU', MetaData())))
-connection.execute(DropTable(Table('Sub_campaign_REVENUE', MetaData())))
-connection.execute(DropTable(Table('Sub_campaign_LTV', MetaData())))
-connection.execute(DropTable(Table('Campaign_DAU', MetaData())))
-connection.execute(DropTable(Table('Campaign_REVENUE', MetaData())))
-connection.execute(DropTable(Table('Campaign_LTV', MetaData())))
+connection.execute(DropTable(Table('SUB_CAMPAIGN_DAU', MetaData())))
+connection.execute(DropTable(Table('SUB_CAMPAIGN_REVENUE', MetaData())))
+connection.execute(DropTable(Table('SUB_CAMPAIGN_LTV', MetaData())))
+connection.execute(DropTable(Table('CAMPAIGN_DAU', MetaData())))
+connection.execute(DropTable(Table('CAMPAIGN_REVENUE', MetaData())))
+connection.execute(DropTable(Table('CAMPAIGN_LTV', MetaData())))
 
 connection.close()
 engine.dispose()
@@ -1181,12 +1161,12 @@ engine = create_engine(URL(
 
 connection = engine.connect()
 
-df_sub_camp_daus.to_sql('Sub_campaign_DAU', con=engine, index=False)
-df_sub_camp_revs.to_sql('Sub_campaign_REVENUE', con=engine, index=False)
-df_sub_camp_LTVs.to_sql('Sub_campaign_LTV', con=engine, index=False)
-df_mark_camp_daus.to_sql('Campaign_DAU', con=engine, index=False)
-df_mark_camp_revs.to_sql('Campaign_REVENUE', con=engine, index=False)
-df_mark_camp_LTVs.to_sql('Campaign_LTV', con=engine, index=False)
+df_sub_camp_daus.to_sql('SUB_CAMPAIGN_DAU', con=engine, index=False)
+df_sub_camp_revs.to_sql('SUB_CAMPAIGN_REVENUE', con=engine, index=False)
+df_sub_camp_LTVs.to_sql('SUB_CAMPAIGN_LTV', con=engine, index=False)
+df_mark_camp_daus.to_sql('CAMPAIGN_DAU', con=engine, index=False)
+df_mark_camp_revs.to_sql('CAMPAIGN_REVENUE', con=engine, index=False)
+df_mark_camp_LTVs.to_sql('CAMPAIGN_LTV', con=engine, index=False)
 
 connection.close()
 engine.dispose()
