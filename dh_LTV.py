@@ -632,9 +632,10 @@ AU_NZ_ByPlayerWeek = AU_NZ_ByPlayerWeek.drop(columns=['PLAYER_DAY'])
 AU_NZ_ByPlayerWeek['ARPWAU'] = AU_NZ_ByPlayerWeek['ARPWAU'].fillna(0)
 #AU_NZ_ByPlayerWeek['LTV'] = AU_NZ_ByPlayerWeek['LTV'].fillna(0)
 
-#%% inserts selected dataframe into snowflake
+#%% drops selected dataframe into snowflake
 
 from sqlalchemy import Table, MetaData #, Column, Integer,  ForeignKeyConstraint
+
 
 registry.register('snowflake', 'snowflake.sqlalchemy', 'dialect')
 
@@ -650,10 +651,51 @@ engine = create_engine(URL(
 
 connection = engine.connect()
 
-connection.execute(DropTable(Table('LTV_AU&NZ_ByPlayerDay', MetaData())))
-connection.execute(DropTable(Table('LTV_AU&NZ_ByPlayerWeek', MetaData())))
-COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU&NZ_ByPlayerDay', con=engine, index=False)
-AU_NZ_ByPlayerWeek.to_sql('LTV_AU&NZ_ByPlayerWeek', con=engine, index=False)
+connection.execute(DropTable(Table('LTV_AU_ByPlayerDay', MetaData())))
+connection.execute(DropTable(Table('LTV_AU_ByPlayerWeek', MetaData())))
+connection.close()
+engine.dispose()
+
+
+#%% inserts selected dataframe into snowflake
+
+registry.register('snowflake', 'snowflake.sqlalchemy', 'dialect')
+
+engine = create_engine(URL(
+    user='KYLE.MAHRE@WARNERMEDIA.COM',
+    password='Strolling_Jim1',
+    account = 'ted_as.us-east-1',
+    authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
+    database="PROD_GAMES",
+    schema="DIMENSION_HOP",
+    role='PROD_ADMIN'
+))
+
+connection = engine.connect()
+
+COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU_ByPlayerDay', con=engine, index=False)
+AU_NZ_ByPlayerWeek.to_sql('LTV_AU_ByPlayerWeek', con=engine, index=False)
+connection.close()
+engine.dispose()
+
+#%% inserts selected dataframe into snowflake
+
+registry.register('snowflake', 'snowflake.sqlalchemy', 'dialect')
+
+engine = create_engine(URL(
+    user='KYLE.MAHRE@WARNERMEDIA.COM',
+    password='Strolling_Jim1',
+    account = 'ted_as.us-east-1',
+    authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
+    database="SEGMENT_EVENTS_PROD",
+    schema="DH_REPORTING_PROD",
+    role='PROD_ADMIN'
+))
+
+connection = engine.connect()
+
+COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU_ByPlayerDay', con=engine, index=False)
+AU_NZ_ByPlayerWeek.to_sql('LTV_AU_ByPlayerWeek', con=engine, index=False)
 connection.close()
 engine.dispose()
 
