@@ -687,8 +687,8 @@ engine = create_engine(URL(
     password='Strolling_Jim1',
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
-    database="SEGMENT_EVENTS_PROD",
-    schema="DH_REPORTING_PROD",
+    database="PROD_GAMES",
+    schema="DIMENSION_HOP",
     role='PROD_ADMIN'
 ))
 
