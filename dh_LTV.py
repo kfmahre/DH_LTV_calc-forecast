@@ -30,8 +30,8 @@ import pmdarima as pm
 
 #%% security
 
-email = XXXX
-secret_password = XXXX
+email = 'KYLE.MAHRE@WARNERMEDIA.COM'
+secret_password = 'Strolling_Jim1'
 
 #%%
 
