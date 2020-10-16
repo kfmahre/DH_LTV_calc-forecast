@@ -28,13 +28,18 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import pmdarima as pm
 #from pmdarima.arima.utils import ndiffs
 
+#%% security
+
+email = XXXX
+secret_password = XXXX
+
 #%%
 
 # Specify the DB and SCHEMA
 
 ctx = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SINGULAR_PROD",
@@ -62,8 +67,8 @@ ctx.close()
 # Specify the DB and SCHEMA
 '''
 ctx1 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD",
@@ -88,8 +93,8 @@ ctx1.close()
 # Specify the DB and SCHEMA
 
 ctx2 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD",
@@ -118,8 +123,8 @@ ctx2.close()
 # Specify the DB and SCHEMA
 
 ctx3 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD",
@@ -145,8 +150,8 @@ ctx3.close()
 # Specify the DB and SCHEMA
 
 ctx4 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD",
@@ -174,8 +179,8 @@ ctx4.close()
 # Specify the DB and SCHEMA
 
 ctx5 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD",
@@ -199,8 +204,8 @@ ctx5.close()
 #%%
 
 ctx6 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD"
@@ -225,8 +230,8 @@ ctx6.close()
 #%%
 
 ctx7 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD"
@@ -250,8 +255,8 @@ ctx7.close()
 #%%
 
 ctx8 = snowflake.connector.connect(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="SEGMENT_EVENTS_PROD"
@@ -635,13 +640,12 @@ AU_NZ_ByPlayerWeek['ARPWAU'] = AU_NZ_ByPlayerWeek['ARPWAU'].fillna(0)
 #%% drops selected dataframe into snowflake
 
 from sqlalchemy import Table, MetaData #, Column, Integer,  ForeignKeyConstraint
-
-
+'''
 registry.register('snowflake', 'snowflake.sqlalchemy', 'dialect')
 
 engine = create_engine(URL(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="PROD_GAMES",
@@ -654,16 +658,17 @@ connection = engine.connect()
 connection.execute(DropTable(Table('LTV_AU_BYDATE', MetaData())))
 connection.execute(DropTable(Table('LTV_AU_BYPLAYERDAY', MetaData())))
 connection.execute(DropTable(Table('LTV_AU_BYPLAYERWEEK', MetaData())))
+
 connection.close()
 engine.dispose()
-
+'''
 #%% inserts selected dataframe into snowflake
 
 registry.register('snowflake', 'snowflake.sqlalchemy', 'dialect')
 
 engine = create_engine(URL(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="PROD_GAMES",
@@ -672,6 +677,10 @@ engine = create_engine(URL(
 ))
 
 connection = engine.connect()
+
+connection.execute(DropTable(Table('LTV_AU_BYDATE', MetaData())))
+connection.execute(DropTable(Table('LTV_AU_BYPLAYERDAY', MetaData())))
+connection.execute(DropTable(Table('LTV_AU_BYPLAYERWEEK', MetaData())))
 
 COHORT_by_date.to_sql('LTV_AU_BYDATE', con=engine, index=False)
 COHORT_AU_NZ_LTV_ByPlayerDay.to_sql('LTV_AU_BYPLAYERDAY', con=engine, index=False)
@@ -1123,10 +1132,10 @@ for i in range(len(camp_names)):
     df_mark_camp_LTVs = pd.merge(df_mark_camp_LTVs,mark_camp_ltvs[camp_names[i]],how = 'left', on=['DATE']).reset_index(drop=True)
 
 #%%
-
+'''
 engine = create_engine(URL(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="PROD_GAMES",
@@ -1145,13 +1154,13 @@ connection.execute(DropTable(Table('CAMPAIGN_LTV', MetaData())))
 
 connection.close()
 engine.dispose()
-
+'''
  
 #%%
 
 engine = create_engine(URL(
-    user='KYLE.MAHRE@WARNERMEDIA.COM',
-    password='Strolling_Jim1',
+    user = email,
+    password = secret_password,
     account = 'ted_as.us-east-1',
     authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
     database="PROD_GAMES",
@@ -1160,6 +1169,13 @@ engine = create_engine(URL(
 ))
 
 connection = engine.connect()
+
+connection.execute(DropTable(Table('SUB_CAMPAIGN_DAU', MetaData())))
+connection.execute(DropTable(Table('SUB_CAMPAIGN_REVENUE', MetaData())))
+connection.execute(DropTable(Table('SUB_CAMPAIGN_LTV', MetaData())))
+connection.execute(DropTable(Table('CAMPAIGN_DAU', MetaData())))
+connection.execute(DropTable(Table('CAMPAIGN_REVENUE', MetaData())))
+connection.execute(DropTable(Table('CAMPAIGN_LTV', MetaData())))
 
 df_sub_camp_daus.to_sql('SUB_CAMPAIGN_DAU', con=engine, index=False)
 df_sub_camp_revs.to_sql('SUB_CAMPAIGN_REVENUE', con=engine, index=False)
