@@ -30,8 +30,8 @@ import pmdarima as pm
 
 #%% security
 
-email = 'KYLE.MAHRE@WARNERMEDIA.COM'
-secret_password = 'Strolling_Jim1'
+email = 'xxxx@xxxxx.xxx'
+secret_password = 'xxxxxxxxxxxx'
 
 #%%
 
@@ -40,8 +40,8 @@ secret_password = 'Strolling_Jim1'
 ctx = snowflake.connector.connect(
     user = email,
     password = secret_password,
-    account = 'ted_as.us-east-1',
-    authenticator = 'https://tw.okta.com/app/snowflake/exkm4az8mcVI9DJdV0x7/sso/saml',
+    account = 'xxxxxxxxxxxxxx',
+    authenticator = 'xxxxxxxxxxxxxxxxxxxx',
     database="SINGULAR_PROD",
     schema="SINGULAR"
     )
@@ -49,7 +49,7 @@ cs = ctx.cursor()
 
 #sql = 'show roles;'
 
-role = 'use role PROD_ADMIN;'
+role = 'use role xxxxxx;'
 
 sql = "select CUSTOM_USER_IDS, PLATFORM, CAMPAIGN_NAME, SUB_CAMPAIGN_NAME, EVENT_TIMESTAMP, CAST(EVENT_TIMESTAMP AS date), PARTNER from USER_MARKETING_DATA"
 
